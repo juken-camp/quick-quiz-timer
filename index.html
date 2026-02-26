@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>Quick Quiz Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="problems.js"></script>
+<style>
+:root{--nc:#00f5ff;--ng:#39ff14;--np:#ff2d78;--ny:#ffea00;--nu:#bf00ff;--b0:#050510;--b1:#0a0a1e;--b2:#0f0f2a;--bg:rgba(0,245,255,0.22);--tm:#e0eaff;--td:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{height:100%;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--b0);color:var(--tm);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(0,245,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.04) 1px,transparent 1px);background-size:40px 40px;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,245,255,0.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(191,0,255,0.07) 0%,transparent 50%);}
+
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 80px;}
+.hidden{display:none!important;}
+
+.logo{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(1.4rem,5vw,2.2rem);letter-spacing:0.05em;text-align:center;margin-bottom:4px;color:var(--nc);text-shadow:0 0 20px var(--nc),0 0 60px rgba(0,245,255,0.3);line-height:1.1;}
+.logo-sub{font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:0.3em;color:var(--nu);text-align:center;text-shadow:0 0 12px var(--nu);margin-bottom:20px;}
+
+.panel{background:var(--b2);border:1px solid var(--bg);border-radius:16px;box-shadow:0 0 30px rgba(0,245,255,0.05),inset 0 1px 0 rgba(255,255,255,0.04);padding:18px;width:100%;max-width:500px;position:relative;}
+.panel+.panel{margin-top:12px;}
+.ptitle{font-family:'Orbitron',monospace;font-size:0.68rem;letter-spacing:0.2em;color:var(--nc);text-align:center;margin-bottom:14px;text-shadow:0 0 10px var(--nc);}
+
+.subj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.subj-btn{background:var(--b1);border:1px solid rgba(0,245,255,0.2);border-radius:12px;color:var(--tm);padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans JP',sans-serif;font-size:0.78rem;font-weight:700;}
+.subj-btn:hover{border-color:var(--nc);background:rgba(0,245,255,0.06);box-shadow:0 0 16px rgba(0,245,255,0.14);}
+.subj-icon{font-size:1.7rem;}
+
+/* tab bar */
+.tab-bar{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px;}
+.tab-bar::-webkit-scrollbar{height:3px;}
+.tab-bar::-webkit-scrollbar-thumb{background:var(--nc);border-radius:2px;}
+.tab{background:var(--b1);border:1px solid rgba(0,245,255,0.15);border-radius:8px;color:var(--td);padding:6px 12px;font-size:0.68rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
+.tab.active{border-color:var(--nc);color:var(--nc);background:rgba(0,245,255,0.08);}
+
+/* cat grid */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:36vh;overflow-y:auto;padding-right:4px;margin-bottom:12px;}
+.cat-grid::-webkit-scrollbar{width:3px;}
+.cat-grid::-webkit-scrollbar-thumb{background:var(--nc);border-radius:2px;}
+.cat-btn{background:var(--b1);border:1px solid rgba(0,245,255,0.12);border-radius:8px;color:var(--td);padding:9px 8px;font-size:0.7rem;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;text-align:center;transition:all 0.18s;line-height:1.3;}
+.cat-btn:hover{border-color:rgba(0,245,255,0.35);color:var(--tm);}
+.cat-btn.sel{border-color:var(--nc);color:var(--nc);background:rgba(0,245,255,0.08);box-shadow:0 0 8px rgba(0,245,255,0.1);}
+
+.sel-badge{font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--td);text-align:center;margin-bottom:10px;letter-spacing:0.1em;}
+.sel-badge span{color:var(--nc);text-shadow:0 0 8px var(--nc);}
+
+/* neon buttons */
+.nbtn{border:none;border-radius:10px;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em;}
+.nbtn:disabled{opacity:0.28;cursor:not-allowed;}
+.nbtn.cy{background:var(--nc);color:#000;box-shadow:0 0 20px rgba(0,245,255,0.4);}
+.nbtn.cy:not(:disabled):hover{box-shadow:0 0 36px rgba(0,245,255,0.7);transform:translateY(-1px);}
+.nbtn.pu{background:var(--nu);color:#fff;box-shadow:0 0 20px rgba(191,0,255,0.4);}
+.nbtn.pu:not(:disabled):hover{box-shadow:0 0 36px rgba(191,0,255,0.7);transform:translateY(-1px);}
+.nbtn.ye{background:var(--ny);color:#000;box-shadow:0 0 20px rgba(255,234,0,0.4);}
+.nbtn.gn{background:var(--ng);color:#000;box-shadow:0 0 20px rgba(57,255,20,0.4);}
+.nbtn.pk{background:var(--np);color:#fff;box-shadow:0 0 20px rgba(255,45,120,0.4);}
+.nbtn.gh{background:none;border:1px solid var(--td);color:var(--td);}
+.nbtn.gh:hover{border-color:var(--nc);color:var(--nc);}
+.back-btn{background:none;border:1px solid var(--td);border-radius:8px;color:var(--td);padding:8px 20px;font-size:0.78rem;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans JP',sans-serif;margin-top:10px;}
+.back-btn:hover{border-color:var(--nc);color:var(--nc);}
+
+/* mode row */
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;}
+.mode-btn{background:var(--b1);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--td);padding:9px;font-size:0.72rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.mode-btn.active{border-color:var(--nc);color:var(--nc);background:rgba(0,245,255,0.06);}
+.mode-desc{font-size:0.66rem;color:var(--td);text-align:center;margin-bottom:12px;}
+
+/* ── TIMER SETTINGS (reusable) ── */
+.tsbox{background:var(--b1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:14px;}
+.tstitle{font-family:'Orbitron',monospace;font-size:0.58rem;letter-spacing:0.2em;color:var(--td);text-align:center;margin-bottom:12px;}
+.tsrow{display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;}
+.tsdiv{background:rgba(255,255,255,0.05);height:56px;}
+.tsitem{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.tslbl{font-size:0.66rem;color:var(--td);}
+.tsstep{display:flex;align-items:center;gap:6px;}
+.tsbtngroup{display:flex;flex-direction:column;gap:3px;}
+.tsbtn{background:var(--b2);border:1px solid rgba(255,255,255,0.1);border-radius:5px;color:var(--tm);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;font-family:'Orbitron',monospace;}
+.tsbtn:hover{border-color:var(--nc);color:var(--nc);}
+.tsbtn.big{width:34px;height:26px;font-size:0.72rem;}
+.tsbtn.sml{width:34px;height:22px;font-size:0.58rem;}
+.tsval{font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:700;min-width:52px;text-align:center;}
+.tsval.qc{color:var(--nu);text-shadow:0 0 10px var(--nu);}
+.tsval.ac{color:var(--ng);text-shadow:0 0 10px var(--ng);}
+.tssec{font-size:0.62rem;color:var(--td);}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;}
+.overlay.hidden{display:none!important;}
+.qcard{background:var(--b2);border:1px solid rgba(191,0,255,0.3);border-radius:20px;box-shadow:0 0 50px rgba(191,0,255,0.08);padding:20px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;}
+.qcard::-webkit-scrollbar{width:3px;}
+.qcard::-webkit-scrollbar-thumb{background:var(--nu);border-radius:2px;}
+
+.tphase{font-family:'Orbitron',monospace;font-size:0.68rem;letter-spacing:0.2em;text-align:center;margin-bottom:8px;text-shadow:0 0 10px currentColor;}
+.tphase.qp{color:var(--nu);}
+.tphase.ap{color:var(--ng);}
+
+.cdwrap{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.cdnum{font-family:'Orbitron',monospace;font-size:2.4rem;font-weight:900;min-width:76px;text-align:center;line-height:1;text-shadow:0 0 24px currentColor;transition:color 0.2s;}
+.cdnum.qc{color:var(--nu);}
+.cdnum.ac{color:var(--ng);}
+.cdnum.warn{color:var(--np)!important;text-shadow:0 0 30px var(--np)!important;}
+.ptrack{flex:1;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;}
+.pfill{height:100%;border-radius:4px;}
+.pfill.qf{background:linear-gradient(90deg,var(--nu),var(--nc));box-shadow:0 0 10px var(--nu);}
+.pfill.af{background:linear-gradient(90deg,var(--ng),var(--nc));box-shadow:0 0 10px var(--ng);}
+
+.tq{font-size:1rem;font-weight:700;text-align:center;padding:14px;background:var(--b1);border-radius:12px;border:1px solid rgba(191,0,255,0.2);margin-bottom:10px;line-height:1.5;}
+.tans{padding:14px;border-radius:12px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;min-height:64px;}
+.tans.show{background:rgba(57,255,20,0.05);border:1px solid rgba(57,255,20,0.4);color:var(--ng);box-shadow:0 0 20px rgba(57,255,20,0.06);}
+.tansval{font-size:1.15rem;font-weight:700;}
+.texp{font-size:0.75rem;color:var(--td);line-height:1.4;font-weight:400;}
+.tcounter{text-align:center;font-family:'Orbitron',monospace;font-size:0.62rem;color:var(--td);letter-spacing:0.15em;margin-bottom:10px;}
+
+.tctrl{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.tctrl .nbtn{padding:10px 4px;font-size:0.64rem;}
+
+/* float + toast */
+#floatBack{position:fixed;bottom:20px;left:20px;width:48px;height:48px;background:var(--b2);border:1px solid rgba(0,245,255,0.3);border-radius:50%;color:var(--nc);font-size:1.2rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 0 16px rgba(0,245,255,0.15);transition:all 0.2s;}
+#floatBack.hidden{display:none!important;}
+#floatBack:hover{box-shadow:0 0 28px rgba(0,245,255,0.35);transform:scale(1.05);}
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--b2);border:1px solid var(--nc);border-radius:10px;padding:10px 20px;font-size:0.8rem;color:var(--nc);z-index:999;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 0 20px rgba(0,245,255,0.2);white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 20px rgba(191,0,255,0.4)}50%{box-shadow:0 0 44px rgba(191,0,255,0.85)}}
+.pulse{animation:pulse-glow 2s ease-in-out infinite;}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:0.3}}
+.flash{animation:flash 0.15s ease-in-out;}
+input,select{font-size:16px;}
+@media(max-width:380px){.cat-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ═══ MAIN ═══ -->
+<div id="mainScreen" class="screen">
+  <div class="logo">QUICK QUIZ<br>TIMER</div>
+  <div class="logo-sub">NEON STUDY MODE</div>
+  <div class="panel">
+    <div class="ptitle">▶ SELECT SUBJECT</div>
+    <div class="subj-grid">
+      <button class="subj-btn" onclick="goSubj('social')"><span class="subj-icon">🌍</span><span>社会</span></button>
+      <button class="subj-btn" onclick="goSubj('science')"><span class="subj-icon">🔬</span><span>理科</span></button>
+      <button class="subj-btn" onclick="goSubj('english')"><span class="subj-icon">📖</span><span>英語</span></button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">▶ 全教科から選ぶ</div>
+    <button class="nbtn cy" onclick="goAll()" style="width:100%;padding:14px;font-size:0.8rem;">🌐 ALL SUBJECTS</button>
+  </div>
+</div>
+
+<!-- ═══ SOCIAL ═══ -->
+<div id="socialScreen" class="screen hidden">
+  <div class="logo">社会</div><div class="logo-sub">SOCIAL STUDIES</div>
+  <div class="panel">
+    <div class="ptitle">▶ SELECT FIELD</div>
+    <div class="subj-grid">
+      <button class="subj-btn" onclick="openCat('geography','social')"><span class="subj-icon">🗺️</span><span>地理</span></button>
+      <button class="subj-btn" onclick="openCat('history','social')"><span class="subj-icon">🏛️</span><span>歴史</span></button>
+      <button class="subj-btn" onclick="openCat('civics','social')"><span class="subj-icon">⚖️</span><span>公民</span></button>
+    </div>
+    <button class="nbtn cy" onclick="openAll(['geography','history','civics'],'🌍 社会まるごと')" style="width:100%;padding:13px;font-size:0.75rem;margin-top:12px;">⚡ 社会まるごと</button>
+    <div style="text-align:center"><button class="back-btn" onclick="show('mainScreen')">← 教科選択へ戻る</button></div>
+  </div>
+</div>
+
+<!-- ═══ SCIENCE ═══ -->
+<div id="scienceScreen" class="screen hidden">
+  <div class="logo">理科</div><div class="logo-sub">SCIENCE</div>
+  <div class="panel">
+    <div class="ptitle">▶ SELECT FIELD</div>
+    <div class="subj-grid" style="grid-template-columns:repeat(2,1fr);">
+      <button class="subj-btn" onclick="openCat('chemistry','science')"><span class="subj-icon">🧪</span><span>化学</span></button>
+      <button class="subj-btn" onclick="openCat('biology','science')"><span class="subj-icon">🧬</span><span>生物</span></button>
+      <button class="subj-btn" onclick="openCat('physics','science')"><span class="subj-icon">⚛️</span><span>物理</span></button>
+      <button class="subj-btn" onclick="openCat('earth','science')"><span class="subj-icon">🌍</span><span>地学</span></button>
+    </div>
+    <button class="nbtn cy" onclick="openAll(['chemistry','biology','physics','earth'],'🔬 理科まるごと')" style="width:100%;padding:13px;font-size:0.75rem;margin-top:12px;">⚡ 理科まるごと</button>
+    <div style="text-align:center"><button class="back-btn" onclick="show('mainScreen')">← 教科選択へ戻る</button></div>
+  </div>
+</div>
+
+<!-- ═══ ENGLISH ═══ -->
+<div id="englishScreen" class="screen hidden">
+  <div class="logo">英語</div><div class="logo-sub">ENGLISH</div>
+  <div class="panel">
+    <div class="ptitle">▶ SELECT FIELD</div>
+    <div class="subj-grid">
+      <button class="subj-btn" onclick="openCat('english_words','english')"><span class="subj-icon">📝</span><span>英単語</span></button>
+      <button class="subj-btn" onclick="openCat('english_phrases','english')"><span class="subj-icon">💬</span><span>英熟語</span></button>
+      <button class="subj-btn" onclick="openCat('english_grammar','english')"><span class="subj-icon">📘</span><span>語形変化</span></button>
+    </div>
+    <button class="nbtn cy" onclick="openAll(['english_words','english_phrases','english_grammar'],'📖 英語まるごと')" style="width:100%;padding:13px;font-size:0.75rem;margin-top:12px;">⚡ 英語まるごと</button>
+    <div style="text-align:center"><button class="back-btn" onclick="show('mainScreen')">← 教科選択へ戻る</button></div>
+  </div>
+</div>
+
+<!-- ═══ CATEGORY SELECT ═══ -->
+<div id="catScreen" class="screen hidden">
+  <div class="logo" id="catLogo">地理</div>
+  <div class="logo-sub" id="catLogoSub">SELECT UNITS</div>
+  <div class="panel">
+    <div class="tab-bar hidden" id="tabBar"></div>
+    <div class="ptitle" id="catPtitle">▶ 単元を選択（複数可）</div>
+    <div class="sel-badge">選択中: <span id="selCount">0</span> 単元</div>
+    <div class="cat-grid" id="catGrid"></div>
+
+    <!-- タイマー設定 (ここで決める) -->
+    <div class="tsbox" id="catTsBox">
+      <div class="tstitle">⚙ TIMER SETTINGS</div>
+      <div class="tsrow">
+        <div class="tsitem">
+          <div class="tslbl">❓ 問題</div>
+          <div class="tsstep">
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('q',-1)">−1</button>
+              <button class="tsbtn sml" onclick="chTime('q',-0.1)">−.1</button>
+            </div>
+            <span class="tsval qc" id="tsQ">3.0</span>
+            <span class="tssec">秒</span>
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('q',1)">+1</button>
+              <button class="tsbtn sml" onclick="chTime('q',0.1)">+.1</button>
+            </div>
+          </div>
+        </div>
+        <div class="tsdiv"></div>
+        <div class="tsitem">
+          <div class="tslbl">💡 解答</div>
+          <div class="tsstep">
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('a',-1)">−1</button>
+              <button class="tsbtn sml" onclick="chTime('a',-0.1)">−.1</button>
+            </div>
+            <span class="tsval ac" id="tsA">5.0</span>
+            <span class="tssec">秒</span>
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('a',1)">+1</button>
+              <button class="tsbtn sml" onclick="chTime('a',0.1)">+.1</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 出題順 -->
+    <div class="mode-row">
+      <button class="mode-btn active" id="mR" onclick="setMode('random')">🎲 ランダム</button>
+      <button class="mode-btn" id="mS" onclick="setMode('seq')">📋 順番通り</button>
+    </div>
+    <div class="mode-desc" id="mDesc">問題をランダムに出題します</div>
+
+    <button class="nbtn pu pulse" id="decideBtn" disabled onclick="decideAndStart()" style="width:100%;padding:16px;font-size:0.85rem;margin-top:4px;">⏱ DECIDE &amp; START</button>
+    <div style="text-align:center"><button class="back-btn" id="catBack">← 戻る</button></div>
+  </div>
+</div>
+
+<!-- ═══ TIMER OVERLAY ═══ -->
+<div id="timerOv" class="overlay hidden">
+  <div class="qcard">
+    <div class="tphase qp" id="tPhase">❓ QUESTION</div>
+    <div class="cdwrap">
+      <div class="cdnum qc" id="cdNum">3.0</div>
+      <div class="ptrack"><div class="pfill qf" id="progFill" style="width:100%"></div></div>
+    </div>
+    <div class="tq" id="tQ"></div>
+    <div class="tans" id="tAns"></div>
+    <div class="tcounter" id="tCount">1 / 1</div>
+    <div class="tctrl">
+      <button class="nbtn ye" id="pauseBtn" onclick="togglePause()">⏸ 停止</button>
+      <button class="nbtn gn" onclick="skipPhase()">⏭ スキップ</button>
+      <button class="nbtn pk" onclick="closeTimer()">✕ 終了</button>
+    </div>
+    <!-- 実行中も変更可 -->
+    <div class="tsbox">
+      <div class="tstitle">⚙ LIVE SETTINGS</div>
+      <div class="tsrow">
+        <div class="tsitem">
+          <div class="tslbl">❓ 問題</div>
+          <div class="tsstep">
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('q',-1)">−1</button>
+              <button class="tsbtn sml" onclick="chTime('q',-0.1)">−.1</button>
+            </div>
+            <span class="tsval qc" id="tsQ2">3.0</span>
+            <span class="tssec">秒</span>
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('q',1)">+1</button>
+              <button class="tsbtn sml" onclick="chTime('q',0.1)">+.1</button>
+            </div>
+          </div>
+        </div>
+        <div class="tsdiv"></div>
+        <div class="tsitem">
+          <div class="tslbl">💡 解答</div>
+          <div class="tsstep">
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('a',-1)">−1</button>
+              <button class="tsbtn sml" onclick="chTime('a',-0.1)">−.1</button>
+            </div>
+            <span class="tsval ac" id="tsA2">5.0</span>
+            <span class="tssec">秒</span>
+            <div class="tsbtngroup">
+              <button class="tsbtn big" onclick="chTime('a',1)">+1</button>
+              <button class="tsbtn sml" onclick="chTime('a',0.1)">+.1</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button id="floatBack" class="hidden" onclick="goHome()">📚</button>
+<div id="toast"></div>
+
+<script>
+/* ══════ CATEGORY DATA ══════ */
+const CAT = {
+  geography:{label:'🗺️ 地理',items:[
+    {id:'geo_world_overview',name:'1.世界の姿'},{id:'geo_japan_overview',name:'2.日本の姿'},{id:'geo_world_life',name:'3.世界各地の生活と環境'},
+    {id:'geo_asia',name:'4.アジア州'},{id:'geo_europe',name:'5.ヨーロッパ州'},{id:'geo_africa',name:'6.アフリカ州'},
+    {id:'geo_north_america',name:'7.北アメリカ州'},{id:'geo_south_america',name:'8.南アメリカ州'},{id:'geo_oceania',name:'9.オセアニア'},
+    {id:'geo_japan_features',name:'10.日本の地域的特色'},{id:'geo_japan_kyushu',name:'11.九州地方'},{id:'geo_japan_chugoku',name:'12.中国・四国地方'},
+    {id:'geo_japan_kinki',name:'13.近畿地方'},{id:'geo_japan_chubu',name:'14.中部地方'},{id:'geo_japan_kanto',name:'15.関東地方'},
+    {id:'geo_japan_tohoku',name:'16.東北地方'},{id:'geo_japan_hokkaido',name:'17.北海道地方'},
+  ]},
+  history:{label:'🏛️ 歴史',items:[
+    {id:'hist_ancient',name:'1.文明のおこりと日本'},{id:'hist_ancient_state',name:'2.古代国家と東アジア'},{id:'hist_kamakura',name:'3.鎌倉幕府'},
+    {id:'hist_muromachi',name:'4.室町幕府'},{id:'hist_unification',name:'5.全国統一'},{id:'hist_edo_early',name:'6.江戸幕府と鎖国'},
+    {id:'hist_edo_develop',name:'7.産業の発達'},{id:'hist_opening',name:'8.日本の開国'},{id:'hist_meiji',name:'9.明治維新'},
+    {id:'hist_wars',name:'10.日清・日露戦争'},{id:'hist_wwi',name:'11.第一次世界大戦'},{id:'hist_wwii',name:'12.第二次世界大戦'},
+    {id:'hist_postwar',name:'13.戦後の発展'},
+  ]},
+  civics:{label:'⚖️ 公民',items:[
+    {id:'civics_modern',name:'1.現代社会と私たち'},{id:'civics_constitution',name:'2.人間の尊重と憲法'},
+    {id:'civics_democracy',name:'3.現代の民主政治'},{id:'civics_economy',name:'4.暮らしと経済'},
+  ]},
+  chemistry:{label:'🧪 化学',items:[
+    {id:'chemistry_basic',name:'1.物質とその性質'},{id:'chemistry_gas',name:'2.気体の性質'},{id:'chemistry_solution',name:'3.水溶液の性質'},
+    {id:'chemistry_state',name:'4.状態変化'},{id:'chemistry_change',name:'5.物質の変化'},{id:'chemistry_structure',name:'6.物質の成り立ち'},
+    {id:'chemistry_reaction',name:'7.化学変化'},{id:'chemistry_mass',name:'8.化学変化と質量'},{id:'chemistry_ion',name:'9.イオンと電池'},
+    {id:'chemistry_acid',name:'10.酸・アルカリ・塩'},{id:'chemistry_formula',name:'11.化学式'},{id:'chemistry_reaction_equation',name:'12.化学反応式'},
+    {id:'chemistry_ion_formula',name:'13.イオンの化学式'},{id:'chemistry_ion_reaction',name:'14.イオンの反応式'},
+  ]},
+  biology:{label:'🧬 生物',items:[
+    {id:'biology_flower',name:'1.花のつくり'},{id:'biology_plant',name:'2.根・葉のつくり'},{id:'biology_animal',name:'3.動物の分類'},
+    {id:'biology_microscope',name:'4.顕微鏡の使い方'},{id:'biology_cell',name:'5.生物と細胞'},{id:'biology_plant_body',name:'6.植物のからだ'},
+    {id:'biology_digestion',name:'7.消化と吸収'},{id:'biology_breathing',name:'8.呼吸'},{id:'biology_circulation',name:'9.血液の循環'},
+    {id:'biology_response',name:'10.刺激と反応'},{id:'biology_growth',name:'11.生物の成長'},{id:'biology_reproduction',name:'12.生物の生殖'},
+    {id:'biology_heredity',name:'13.遺伝の規則性'},{id:'biology_evolution',name:'14.生物の進化'},{id:'biology_environment',name:'15.自然と環境'},
+  ]},
+  physics:{label:'⚛️ 物理',items:[
+    {id:'physics_light',name:'1.光による現象'},{id:'physics_sound',name:'2.音による現象'},{id:'physics_force',name:'3.力による現象'},
+    {id:'physics_current',name:'4.電流と電圧'},{id:'physics_energy',name:'5.電気エネルギー'},{id:'physics_magnetic',name:'6.電流と磁界'},
+    {id:'physics_balance',name:'7.力のつり合い'},{id:'physics_motion',name:'8.物体の運動'},{id:'physics_pressure',name:'9.水圧と浮力'},
+    {id:'physics_work',name:'10.エネルギーと仕事'},{id:'physics_energy_change',name:'11.エネルギーの移り変わり'},{id:'physics_resources',name:'12.エネルギー資源'},
+  ]},
+  earth:{label:'🌍 地学',items:[
+    {id:'earth_volcano',name:'1.火山'},{id:'earth_earthquake',name:'2.地震'},{id:'earth_strata',name:'3.地層のでき方'},
+    {id:'earth_weather',name:'4.気象の観測'},{id:'earth_front',name:'5.気団と前線'},{id:'earth_cloud',name:'6.雲のでき方'},
+    {id:'earth_celestial',name:'7.天体の動き'},{id:'earth_solar',name:'8.太陽系の天体'},{id:'earth_moon',name:'9.月と惑星'},
+  ]},
+  english_words:{label:'📝 英単語',items:[
+    {id:'words_time',name:'月・序数'},{id:'words_week',name:'曜日'},{id:'words_timeday',name:'時・時間帯'},
+    {id:'words_season',name:'季節・家族'},{id:'words_sports',name:'スポーツ・教科'},{id:'words_job',name:'職業・人・建物'},
+    {id:'words_uncountable',name:'数えられない名詞'},{id:'words_verb_important',name:'入試必出重要動詞'},{id:'words_verb_various',name:'いろいろな意味の動詞'},
+    {id:'words_verb_set',name:'セットで覚える動詞'},{id:'words_verb_other',name:'その他の重要動詞'},{id:'words_adj_quantity',name:'数・量を表す形容詞'},
+    {id:'words_adj_various',name:'いろいろな形容詞'},{id:'words_adj_adv',name:'重要形容詞・副詞'},{id:'words_adv_manner',name:'様子を表す副詞'},
+  ]},
+  english_phrases:{label:'💬 英熟語',items:[
+    {id:'phrases_verb',name:'よく出る動詞の熟語'},{id:'phrases_set',name:'セットで覚える熟語'},{id:'phrases_similar',name:'意味の似ている熟語'},
+    {id:'phrases_verb_other',name:'その他の動詞の熟語'},{id:'phrases_be',name:'be動詞を使った熟語'},{id:'phrases_quantity',name:'数や量を表す熟語'},
+    {id:'phrases_time_place',name:'時・場所を表す熟語'},{id:'phrases_important',name:'その他の重要熟語'},
+  ]},
+  english_grammar:{label:'📘 語形変化',items:[
+    {id:'grammar_irregular_past',name:'不規則動詞 - 過去形'},{id:'grammar_irregular_same',name:'不規則動詞 - 同形'},
+    {id:'grammar_irregular_special',name:'不規則動詞 - 特殊'},{id:'grammar_be_past',name:'be動詞 - 過去形'},
+    {id:'grammar_regular',name:'規則動詞'},{id:'grammar_third_person',name:'三人称単数現在形'},{id:'grammar_ing',name:'動詞の-ing形'},
+    {id:'grammar_comparative',name:'比較級・最上級'},{id:'grammar_more_most',name:'more/most形容詞'},
+    {id:'grammar_noun_plural',name:'名詞の複数形'},{id:'grammar_irregular_plural',name:'不規則な複数形'},{id:'grammar_pronoun',name:'人称代名詞'},
+  ]},
+};
+
+/* ══════ STATE ══════ */
+let selIds = new Set();
+let pool = [], qMode = 'random', seqI = 0;
+let catMode = 'single', activeCatKey = '';
+let tQ = 3.0, tA = 5.0;
+let tPaused = false, tPhase = 'q', tProbs = [], tIdx = 0;
+let tTout = null, tRaf = null;
+// countdown SFX tracking
+let lastBeepSec = -1;
+
+/* ══════ SCREEN HELPERS ══════ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function goSubj(s){ clk(); show(s+'Screen'); }
+function goHome(){
+  clk();
+  selIds.clear();
+  document.getElementById('floatBack').classList.add('hidden');
+  show('mainScreen');
+}
+
+/* ══════ OPEN CAT (single field) ══════ */
+function openCat(subj, backScreen){
+  clk();
+  catMode = 'single'; activeCatKey = subj;
+  document.getElementById('catLogo').textContent    = CAT[subj].label;
+  document.getElementById('catLogoSub').textContent = 'SELECT UNITS';
+  document.getElementById('catPtitle').textContent  = '▶ 単元を選択（複数可）';
+  document.getElementById('tabBar').classList.add('hidden');
+  renderGrid(subj);
+  document.getElementById('catBack').onclick = ()=>{ clk(); show(backScreen+'Screen'); };
+  show('catScreen');
+}
+
+/* ══════ OPEN ALL (tab mode) ══════ */
+function goAll(){
+  clk(); catMode='all';
+  const keys = Object.keys(CAT);
+  activeCatKey = keys[0];
+  document.getElementById('catLogo').textContent    = '🌐 全教科';
+  document.getElementById('catLogoSub').textContent = 'ALL SUBJECTS';
+  document.getElementById('catPtitle').textContent  = '▶ タブで分野を切り替えて選択';
+  buildTabs(keys);
+  renderGrid(activeCatKey);
+  document.getElementById('catBack').onclick = ()=>{ clk(); show('mainScreen'); };
+  show('catScreen');
+}
+
+/* ══════ まるごと → catScreen で設定 ══════ */
+function openAll(subjects, label){
+  clk();
+  catMode = 'all-preset';
+  // 全単元を選択済みにする
+  selIds.clear();
+  subjects.forEach(s=>CAT[s].items.forEach(c=>selIds.add(c.id)));
+  // タブ表示
+  activeCatKey = subjects[0];
+  document.getElementById('catLogo').textContent    = label;
+  document.getElementById('catLogoSub').textContent = 'ALL UNITS SELECTED';
+  document.getElementById('catPtitle').textContent  = '▶ 単元の追加・変更もできます';
+  buildTabs(subjects);
+  renderGrid(activeCatKey);
+  document.getElementById('catBack').onclick = ()=>{ clk(); show('mainScreen'); };
+  show('catScreen');
+}
+
+function buildTabs(keys){
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = '';
+  bar.classList.remove('hidden');
+  keys.forEach(k=>{
+    const t = document.createElement('button');
+    t.className = 'tab' + (k===activeCatKey?' active':'');
+    t.textContent = CAT[k].label;
+    t.dataset.key = k;
+    t.onclick = ()=>{ clk(); activeCatKey=k; document.querySelectorAll('.tab').forEach(tb=>tb.classList.toggle('active',tb.dataset.key===k)); renderGrid(k); };
+    bar.appendChild(t);
+  });
+}
+
+/* ══════ RENDER GRID ══════ */
+function renderGrid(key){
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = '';
+  const allIds = CAT[key].items.map(c=>c.id);
+  const allSel = allIds.every(id=>selIds.has(id));
+
+  // すべて選択/解除ボタン
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cat-btn' + (allSel?' sel':'');
+  allBtn.style.cssText = 'grid-column:1/-1;border-style:dashed;font-family:"Orbitron",monospace;font-size:0.65rem;letter-spacing:0.1em;';
+  allBtn.textContent = allSel ? '✓ すべて解除' : '＋ すべて選択';
+  allBtn.onclick = ()=>{
+    clk();
+    const ns = allIds.every(id=>selIds.has(id));
+    if(ns){ allIds.forEach(id=>selIds.delete(id)); }
+    else  { allIds.forEach(id=>selIds.add(id)); }
+    renderGrid(key);
+  };
+  grid.appendChild(allBtn);
+
+  CAT[key].items.forEach(c=>{
+    const b = document.createElement('button');
+    b.className = 'cat-btn' + (selIds.has(c.id)?' sel':'');
+    b.textContent = c.name;
+    b.onclick = ()=>{
+      clk();
+      if(selIds.has(c.id)){ selIds.delete(c.id); b.classList.remove('sel'); }
+      else                 { selIds.add(c.id);    b.classList.add('sel');    }
+      const nowAll = allIds.every(id=>selIds.has(id));
+      allBtn.textContent = nowAll?'✓ すべて解除':'＋ すべて選択';
+      allBtn.classList.toggle('sel', nowAll);
+      updateSelCount();
+    };
+    grid.appendChild(b);
+  });
+  updateSelCount();
+}
+
+function updateSelCount(){
+  const n = selIds.size;
+  document.getElementById('selCount').textContent = n;
+  document.getElementById('decideBtn').disabled = (n===0);
+}
+
+function setMode(m){
+  clk(); qMode=m;
+  document.getElementById('mR').classList.toggle('active',m==='random');
+  document.getElementById('mS').classList.toggle('active',m==='seq');
+  document.getElementById('mDesc').textContent = m==='random'?'問題をランダムに出題します':'問題を順番通りに出題します';
+}
+
+/* ══════ DECIDE & START ══════ */
+function decideAndStart(){
+  // build pool
+  pool = [];
+  selIds.forEach(id=>{
+    if(typeof problemDatabase!=='undefined' && problemDatabase[id])
+      pool = pool.concat(problemDatabase[id]);
+  });
+  if(pool.length===0){ toast('⚠ 問題データが見つかりません'); return; }
+  document.getElementById('floatBack').classList.remove('hidden');
+  startTimer();
+}
+
+/* ══════ TIMER ══════ */
+function startTimer(){
+  suc();
+  tProbs = qMode==='random'
+    ? [...pool].sort(()=>Math.random()-0.5)
+    : [...pool];
+  tIdx=0; tPaused=false; lastBeepSec=-1;
+  document.getElementById('pauseBtn').textContent='⏸ 停止';
+  syncSettingsDisplay();
+  document.getElementById('timerOv').classList.remove('hidden');
+  showTQ();
+}
+function closeTimer(){
+  clk(); killTimer();
+  document.getElementById('timerOv').classList.add('hidden');
+}
+
+function showTQ(){
+  tPhase='q';
+  const q = tProbs[tIdx];
+  document.getElementById('tPhase').textContent='❓ QUESTION';
+  document.getElementById('tPhase').className='tphase qp';
+  document.getElementById('tQ').textContent = q.q;
+  document.getElementById('tCount').textContent = (tIdx+1)+' / '+tProbs.length;
+  // 解答欄を空に（問題フェーズ中は非表示）
+  const ta = document.getElementById('tAns');
+  ta.className='tans'; ta.innerHTML='';
+  document.getElementById('cdNum').className='cdnum qc';
+  document.getElementById('progFill').className='pfill qf';
+  lastBeepSec = -1;
+  if(!tPaused) countdown(tQ, showTA);
+}
+
+function showTA(){
+  tPhase='a';
+  const q = tProbs[tIdx];
+  const ans = q.opts[q.ans];
+  document.getElementById('tPhase').textContent='💡 ANSWER';
+  document.getElementById('tPhase').className='tphase ap';
+  const ta = document.getElementById('tAns');
+  ta.className='tans show';
+  ta.innerHTML=`<div class="tansval">✅ ${ans}</div>${q.exp?`<div class="texp">${q.exp}</div>`:''}`;
+  document.getElementById('cdNum').className='cdnum ac';
+  document.getElementById('progFill').className='pfill af';
+  lastBeepSec = -1;
+  if(!tPaused) countdown(tA, ()=>{
+    tIdx=(tIdx+1)%tProbs.length;
+    if(tIdx===0) toast('🔄 一周しました！');
+    showTQ();
+  });
+}
+
+function countdown(secs, cb){
+  killTimer();
+  const dur = secs*1000, t0 = performance.now();
+  function tick(now){
+    const el = Math.max(0, dur-(now-t0));
+    const dispSec = el/1000;
+    const dispStr = dispSec.toFixed(1);
+    const cdEl = document.getElementById('cdNum');
+    cdEl.textContent = dispStr;
+    document.getElementById('progFill').style.width = (el/dur*100)+'%';
+
+    // ── 効果音ロジック ──
+    const floorSec = Math.floor(dispSec);
+    if(floorSec !== lastBeepSec && floorSec >= 0){
+      lastBeepSec = floorSec;
+      if(el <= 10){ // 残り10秒以内でピッ
+        if(floorSec === 0){
+          // 0秒！ → ドン
+          sfxDone();
+          cdEl.classList.add('warn');
+          setTimeout(()=>cdEl.classList.remove('warn'), 300);
+        } else if(floorSec <= 3){
+          // 3・2・1 → 高めのビープ
+          sfxBeepHigh();
+          cdEl.classList.add('warn');
+          setTimeout(()=>cdEl.classList.remove('warn'), 200);
+        } else {
+          // 4〜10 → 低めのビープ
+          sfxBeepLow();
+        }
+      }
+    }
+
+    if(el<=0){ cb(); return; }
+    tRaf = requestAnimationFrame(tick);
+  }
+  tRaf = requestAnimationFrame(tick);
+  tTout = setTimeout(cb, dur);
+}
+
+function killTimer(){ clearTimeout(tTout); cancelAnimationFrame(tRaf); tTout=null; tRaf=null; }
+
+function togglePause(){
+  clk(); tPaused=!tPaused;
+  const b = document.getElementById('pauseBtn');
+  if(tPaused){ killTimer(); b.textContent='▶ 再開'; }
+  else{ b.textContent='⏸ 停止'; lastBeepSec=-1; if(tPhase==='q') showTQ(); else showTA(); }
+}
+function skipPhase(){
+  clk(); killTimer(); lastBeepSec=-1;
+  if(tPhase==='q') showTA();
+  else{ tIdx=(tIdx+1)%tProbs.length; if(tIdx===0)toast('🔄 一周しました！'); showTQ(); }
+}
+function chTime(t,d){
+  clk();
+  if(t==='q'){ tQ=Math.round(Math.max(0.1,Math.min(60,tQ+d))*10)/10; }
+  else        { tA=Math.round(Math.max(0.1,Math.min(60,tA+d))*10)/10; }
+  syncSettingsDisplay();
+  // タイマー起動中なら即リスタート
+  if(!tPaused && document.getElementById('timerOv').classList.contains('hidden')===false){
+    killTimer(); lastBeepSec=-1;
+    if(tPhase==='q') countdown(tQ, showTA);
+    else countdown(tA, ()=>{ tIdx=(tIdx+1)%tProbs.length; if(tIdx===0)toast('🔄 一周しました！'); showTQ(); });
+  }
+}
+function syncSettingsDisplay(){
+  ['tsQ','tsQ2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=tQ.toFixed(1); });
+  ['tsA','tsA2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=tA.toFixed(1); });
+}
+
+/* ══════ SOUND ENGINE ══════ */
+let ac = null;
+function ga(){ if(!ac)try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} if(ac&&ac.state==='suspended')ac.resume(); return ac; }
+function tn(f,d,v=0.18,tp='sine'){
+  const a=ga(); if(!a) return;
+  const o=a.createOscillator(), g=a.createGain();
+  o.connect(g); g.connect(a.destination);
+  o.frequency.value=f; o.type=tp;
+  g.gain.setValueAtTime(0,a.currentTime);
+  g.gain.linearRampToValueAtTime(v,a.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);
+  o.start(); o.stop(a.currentTime+d);
+}
+
+// 通常クリック
+function clk(){ tn(900,0.06,0.1,'square'); }
+// START 成功音
+function suc(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tn(f,0.18,0.12),i*70)); }
+// カウント中 低ビープ（4〜10秒）
+function sfxBeepLow(){ tn(440,0.08,0.12,'sine'); }
+// カウント中 高ビープ（3・2・1）
+function sfxBeepHigh(){ tn(880,0.1,0.2,'sine'); }
+// 0秒！ドーン
+function sfxDone(){
+  tn(120,0.5,0.3,'sawtooth');
+  tn(240,0.35,0.2,'square');
+  setTimeout(()=>tn(60,0.4,0.25,'sine'),80);
+}
+// 一周
+function sfxLap(){ [784,659,523].forEach((f,i)=>setTimeout(()=>tn(f,0.15,0.15),i*80)); }
+
+/* ── TOAST ── */
+let tT;
+function toast(m){
+  const e=document.getElementById('toast');
+  e.textContent=m; e.classList.add('show');
+  clearTimeout(tT); tT=setTimeout(()=>e.classList.remove('show'),2500);
+  if(m.includes('一周')) sfxLap();
+}
+
+document.addEventListener('click',()=>{ if(ac&&ac.state==='suspended')ac.resume(); },{once:true});
+</script>
+</body>
+</html>
