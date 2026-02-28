@@ -155,6 +155,45 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @keyframes comboFlash{0%{box-shadow:inset 0 0 0 2px transparent}50%{box-shadow:inset 0 0 0 2px var(--ny)}100%{box-shadow:inset 0 0 0 2px transparent}}
 .combo-ring{animation:comboFlash 0.3s ease-out;}
 
+/* ── LIFE RECOVERY EFFECT ── */
+.life-recover-popup{position:fixed;left:50%;top:38%;transform:translateX(-50%);pointer-events:none;z-index:350;animation:lifeRecover 1.6s ease-out forwards;text-align:center;}
+@keyframes lifeRecover{0%{opacity:0;transform:translateX(-50%) scale(0.3) rotate(-10deg)}15%{opacity:1;transform:translateX(-50%) scale(1.2) rotate(2deg)}40%{transform:translateX(-50%) scale(1) rotate(0deg)}70%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-50px) scale(0.8)}}
+.life-recover-popup .lr-icon{font-size:3rem;display:block;filter:drop-shadow(0 0 20px rgba(255,45,120,0.8));}
+.life-recover-popup .lr-text{font-family:'Orbitron',monospace;font-weight:900;font-size:1.1rem;color:var(--np);text-shadow:0 0 20px var(--np);margin-top:4px;}
+
+/* ── SHIELD EFFECT ── */
+.hud-shield{font-size:0.7rem;color:#00f5ff;text-shadow:0 0 10px #00f5ff;font-family:'Orbitron',monospace;font-weight:700;}
+@keyframes shieldPop{0%{opacity:0;transform:translateX(-50%) scale(0.3)}20%{opacity:1;transform:translateX(-50%) scale(1.3)}50%{transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-40px) scale(0.9)}}
+.shield-popup{position:fixed;left:50%;top:36%;transform:translateX(-50%);pointer-events:none;z-index:350;animation:shieldPop 1.6s ease-out forwards;text-align:center;}
+.shield-popup .sp-icon{font-size:3.5rem;display:block;filter:drop-shadow(0 0 24px rgba(0,245,255,0.9));}
+.shield-popup .sp-text{font-family:'Orbitron',monospace;font-weight:900;font-size:1rem;color:var(--nc);text-shadow:0 0 20px var(--nc);margin-top:4px;}
+.shield-active .qcard{border-left:1px solid rgba(0,245,255,0.5)!important;border-right:1px solid rgba(0,245,255,0.5)!important;box-shadow:inset 0 0 40px rgba(0,245,255,0.06);}
+@keyframes shieldBreak{0%{box-shadow:inset 0 0 60px rgba(0,245,255,0.3)}50%{box-shadow:inset 0 0 80px rgba(255,255,255,0.2)}100%{box-shadow:none}}
+.shield-break{animation:shieldBreak 0.6s ease-out;}
+
+/* ── FEVER TIME EFFECT ── */
+@keyframes feverBg{0%{border-color:rgba(255,234,0,0.5)}33%{border-color:rgba(255,45,120,0.5)}66%{border-color:rgba(191,0,255,0.5)}100%{border-color:rgba(255,234,0,0.5)}}
+.fever-active .qcard{animation:feverBg 1.2s linear infinite!important;border-left-width:2px!important;border-right-width:2px!important;}
+@keyframes feverPulse{0%,100%{text-shadow:0 0 12px var(--ny)}50%{text-shadow:0 0 30px var(--ny),0 0 60px rgba(255,234,0,0.5)}}
+.fever-badge{font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:900;color:var(--ny);animation:feverPulse 0.6s ease-in-out infinite;letter-spacing:0.1em;}
+.fever-bar{height:3px;background:rgba(255,234,0,0.15);border-radius:2px;overflow:hidden;margin-top:3px;}
+.fever-bar-fill{height:100%;background:linear-gradient(90deg,var(--ny),var(--np),var(--nu));border-radius:2px;transition:width 0.3s;box-shadow:0 0 8px var(--ny);}
+@keyframes feverStart{0%{opacity:0;transform:translateX(-50%) scale(0.2) rotate(-15deg)}25%{opacity:1;transform:translateX(-50%) scale(1.4) rotate(3deg)}60%{transform:translateX(-50%) scale(1) rotate(0)}100%{opacity:0;transform:translateX(-50%) translateY(-30px)}}
+.fever-popup{position:fixed;left:50%;top:33%;transform:translateX(-50%);pointer-events:none;z-index:360;animation:feverStart 2s ease-out forwards;text-align:center;}
+.fever-popup .fp-icon{font-size:3rem;display:block;}
+.fever-popup .fp-text{font-family:'Orbitron',monospace;font-weight:900;font-size:1.5rem;background:linear-gradient(90deg,var(--ny),var(--np),var(--nu));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 10px rgba(255,234,0,0.6));}
+.fever-popup .fp-sub{font-family:'Orbitron',monospace;font-size:0.7rem;color:var(--ny);text-shadow:0 0 10px var(--ny);margin-top:2px;}
+
+/* ── COMBO MILESTONE PARTICLES ── */
+@keyframes particle{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--px),var(--py)) scale(0.3)}}
+.combo-particle{position:fixed;pointer-events:none;z-index:380;font-size:1.5rem;animation:particle 1s ease-out forwards;}
+
+/* ── MAX LIVES = 5 ── */
+.hud-heart{font-size:0.85rem;transition:transform 0.3s;}
+.hud-heart.recover{animation:heartRecover 0.5s ease-out;}
+@keyframes heartRecover{0%{transform:scale(0.3);opacity:0}50%{transform:scale(1.5)}100%{transform:scale(1);opacity:1}}
+.hud-powerups{display:flex;gap:4px;align-items:center;margin-left:2px;}
+
 /* ── GAME OVER OVERLAY ── */
 #gameoverOv{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
 #gameoverOv.hidden{display:none!important;}
@@ -414,7 +453,7 @@ input,select{font-size:16px;}
     <div class="go-rank" id="goRank">—</div>
     <div class="go-stats">
       <div class="go-stat"><div class="go-stat-val" id="goScore" style="color:var(--ny)">0</div><div class="go-stat-lbl">SCORE</div></div>
-      <div class="go-stat"><div class="go-stat-val" id="goStreak" style="color:var(--np)">0</div><div class="go-stat-lbl">MAX STREAK</div></div>
+      <div class="go-stat"><div class="go-stat-val" id="goStreak" style="color:var(--np)">0</div><div class="go-stat-lbl">MAX COMBO</div></div>
       <div class="go-stat"><div class="go-stat-val" id="goCorrect" style="color:var(--ng)">0</div><div class="go-stat-lbl">CORRECT</div></div>
       <div class="go-stat"><div class="go-stat-val" id="goTotal" style="color:var(--nc)">0</div><div class="go-stat-lbl">TOTAL</div></div>
     </div>
@@ -511,10 +550,21 @@ let qStartTime = 0; // for time bonus
 /* ── GAME STATE ── */
 let gScore = 0, gStreak = 0, gMaxStreak = 0;
 let gCombo = 0;   // 連続正解数
+const MAX_LIVES = 5;
 let gLives = 3;
 let gCorrect = 0, gTotal = 0;
 let gLevel = 1, gXP = 0;
 const XP_PER_LEVEL = [100,150,200,250,300,350,400,500,600,800]; // レベルごとの必要XP
+
+/* ── COMBO REWARD STATE ── */
+let gShield = 0;          // シールド残り回数
+let gFever = false;       // フィーバーモード中
+let gFeverEnd = 0;        // フィーバー終了時刻
+let gFeverRaf = null;     // フィーバー描画RAF
+const COMBO_HEAL = 5;     // 5コンボでライフ回復
+const COMBO_SHIELD = 10;  // 10コンボでシールド
+const COMBO_FEVER = 15;   // 15コンボでフィーバー
+const FEVER_DURATION = 10000; // フィーバー10秒
 
 /* コンボ倍率テーブル（連続正解数→倍率） */
 function comboMult(c){
@@ -544,7 +594,7 @@ function show(id){
 }
 function goSubj(s){ clk(); show(s+'Screen'); }
 function goHome(){
-  clk();
+  clk(); endFever();
   selIds.clear();
   document.getElementById('floatBack').classList.add('hidden');
   document.getElementById('timerOv').classList.add('hidden');
@@ -707,6 +757,9 @@ function resetGame(){
   gScore=0; gStreak=0; gMaxStreak=0; gCombo=0;
   gLives=3; gCorrect=0; gTotal=0;
   gLevel=1; gXP=0;
+  gShield=0; gFever=false; gFeverEnd=0;
+  cancelAnimationFrame(gFeverRaf);
+  document.getElementById('timerOv').classList.remove('shield-active','fever-active');
   updateHUD();
 }
 
@@ -718,15 +771,19 @@ function onCorrect(elapsed){
   if(gStreak>gMaxStreak) gMaxStreak=gStreak;
   gCorrect++; gTotal++;
 
-  // 得点計算: 基本100点 + タイムボーナス（残り時間が多いほど+最大100) × コンボ倍率
+  // 得点計算: 基本100点 + タイムボーナス × コンボ倍率 × フィーバー倍率
   const timeBonus = Math.floor((1 - Math.min(elapsed,tQ*1000)/(tQ*1000)) * 100);
   const mult = comboMult(gCombo);
-  const pts = Math.floor((100 + timeBonus) * mult);
+  const feverMult = gFever ? 2 : 1;
+  const pts = Math.floor((100 + timeBonus) * mult * feverMult);
   gScore += pts;
 
   // XP
-  const xp = Math.floor(20 * mult);
+  const xp = Math.floor(20 * mult * feverMult);
   addXP(xp);
+
+  // ═══ COMBO MILESTONE REWARDS ═══
+  checkComboMilestones();
 
   updateHUD();
 
@@ -737,14 +794,46 @@ function onCorrect(elapsed){
     setTimeout(()=>document.getElementById('qcard').classList.remove('combo-ring'),300);
   }
 
-  showScorePopup('+'+pts, '#ffea00');
+  showScorePopup('+'+pts+(gFever?' 🔥':''), gFever?'#ff2d78':'#ffea00');
   sfxCorrect();
 }
 
+function checkComboMilestones(){
+  // 5の倍数でライフ回復
+  if(gCombo > 0 && gCombo % COMBO_HEAL === 0 && gLives < MAX_LIVES){
+    gLives++;
+    showLifeRecover();
+    sfxHeal();
+    spawnParticles('❤️', 8);
+  }
+  // 10の倍数でシールド
+  if(gCombo > 0 && gCombo % COMBO_SHIELD === 0){
+    gShield++;
+    showShieldPopup();
+    sfxShield();
+    spawnParticles('🛡️', 6);
+  }
+  // 15の倍数でフィーバー
+  if(gCombo > 0 && gCombo % COMBO_FEVER === 0){
+    startFever();
+    spawnParticles('⭐', 12);
+  }
+}
+
 function onMiss(){
-  gCombo = 0; gStreak = 0;
   gTotal++;
+  // シールドチェック
+  if(gShield > 0){
+    gShield--;
+    gCombo = 0; gStreak = 0;
+    showShieldBreak();
+    sfxShieldBreak();
+    updateHUD();
+    return; // ライフは減らない！
+  }
+  gCombo = 0; gStreak = 0;
   gLives--;
+  endFever(); // フィーバー解除
   updateHUD();
   sfxWrong();
   shakeHud();
@@ -767,14 +856,24 @@ function xpNeeded(lv){
 }
 
 function updateHUD(){
-  // Lives
+  // Lives (max 5)
   const lv = document.getElementById('hudLives');
   lv.innerHTML = '';
-  for(let i=0;i<3;i++){
+  for(let i=0;i<MAX_LIVES;i++){
     const h=document.createElement('span');
     h.className='hud-heart'+(i>=gLives?' lost':'');
     h.textContent='❤️';
     lv.appendChild(h);
+  }
+  // Shield indicator
+  if(gShield > 0){
+    const s=document.createElement('span');
+    s.className='hud-shield';
+    s.textContent='🛡️'+gShield;
+    lv.appendChild(s);
+    document.getElementById('timerOv').classList.add('shield-active');
+  } else {
+    document.getElementById('timerOv').classList.remove('shield-active');
   }
   // Score
   document.getElementById('hudScore').textContent = gScore.toLocaleString();
@@ -783,7 +882,30 @@ function updateHUD(){
   se.textContent = gStreak>0?'🔥 '+gStreak+' STREAK':'';
   // Combo
   const ce = document.getElementById('hudCombo');
-  ce.textContent = comboLabel(gCombo);
+  const cl = comboLabel(gCombo);
+  // Show next milestone hint
+  let hint = '';
+  if(gCombo >= 1 && gCombo < COMBO_HEAL){
+    hint = ' → '+COMBO_HEAL+'で❤️回復';
+  } else if(gCombo >= COMBO_HEAL && gCombo < COMBO_SHIELD){
+    hint = ' → '+COMBO_SHIELD+'で🛡️';
+  } else if(gCombo >= COMBO_SHIELD && gCombo < COMBO_FEVER){
+    hint = ' → '+COMBO_FEVER+'で🔥FEVER';
+  }
+  ce.innerHTML = cl ? cl + '<span style="font-size:0.5rem;opacity:0.6">'+hint+'</span>' : 
+                 (gCombo>=1 ? '<span style="font-size:0.55rem;color:var(--td)">'+gCombo+'連続'+hint+'</span>' : '');
+  // Fever indicator in HUD
+  let feverEl = document.getElementById('hudFever');
+  if(!feverEl){
+    feverEl = document.createElement('div');
+    feverEl.id='hudFever';
+    document.querySelector('.xp-wrap').after(feverEl);
+  }
+  if(gFever){
+    feverEl.innerHTML = '<div class="fever-badge">🔥 FEVER TIME — SCORE x2 🔥</div><div class="fever-bar"><div class="fever-bar-fill" id="feverFill" style="width:100%"></div></div>';
+  } else {
+    feverEl.innerHTML = '';
+  }
 }
 function updateXPBar(){
   const need = xpNeeded(gLevel);
@@ -829,7 +951,7 @@ function showLevelUp(){
 }
 
 function gameOver(){
-  killTimer();
+  killTimer(); endFever();
   document.getElementById('timerOv').classList.add('hidden');
   // Rank
   const rank = calcRank(gScore, gCorrect, gTotal);
@@ -871,7 +993,7 @@ function startTimer(){
   showTQ();
 }
 function closeTimer(){
-  clk(); killTimer(); stopSessTimer();
+  clk(); killTimer(); stopSessTimer(); endFever();
   document.getElementById('timerOv').classList.add('hidden');
 }
 
@@ -1046,6 +1168,131 @@ function sfxGameOver(){
   [0,0.3,0.6,0.9].forEach((off,i)=>{ const f=[200,180,150,100][i]; const o=a.createOscillator(),g=a.createGain(); o.connect(g);g.connect(a.destination); o.type='sawtooth';o.frequency.value=f; g.gain.setValueAtTime(0,now+off);g.gain.linearRampToValueAtTime(0.3,now+off+0.02);g.gain.exponentialRampToValueAtTime(0.001,now+off+0.28); o.start(now+off);o.stop(now+off+0.3); });
 }
 function sfxLap(){ [784,659,523].forEach((f,i)=>setTimeout(()=>tn(f,0.15,0.15),i*80)); }
+
+/* ══════════════════════════════
+   COMBO REWARD VISUALS
+══════════════════════════════ */
+function showLifeRecover(){
+  const el=document.createElement('div');
+  el.className='life-recover-popup';
+  el.innerHTML='<span class="lr-icon">❤️‍🔥</span><span class="lr-text">LIFE RECOVER!</span>';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1600);
+  // Animate the recovered heart
+  setTimeout(()=>{
+    const hearts=document.querySelectorAll('.hud-heart:not(.lost)');
+    const last=hearts[hearts.length-1];
+    if(last) last.classList.add('recover');
+  },100);
+  toast('❤️ '+COMBO_HEAL+'コンボでライフ回復!');
+}
+
+function showShieldPopup(){
+  const el=document.createElement('div');
+  el.className='shield-popup';
+  el.innerHTML='<span class="sp-icon">🛡️</span><span class="sp-text">SHIELD GET!</span>';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1600);
+  toast('🛡️ シールド獲得！ミス1回防御！');
+}
+
+function showShieldBreak(){
+  const el=document.getElementById('qcard');
+  el.classList.add('shield-break');
+  setTimeout(()=>el.classList.remove('shield-break'),600);
+  showScorePopup('🛡️ BLOCKED!', '#00f5ff');
+  toast('🛡️ シールドがミスを防いだ！');
+}
+
+function startFever(){
+  gFever = true;
+  gFeverEnd = performance.now() + FEVER_DURATION;
+  document.getElementById('timerOv').classList.add('fever-active');
+  // Popup
+  const el=document.createElement('div');
+  el.className='fever-popup';
+  el.innerHTML='<span class="fp-icon">🔥⚡🔥</span><span class="fp-text">FEVER TIME!</span><span class="fp-sub">10秒間スコア2倍！</span>';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2000);
+  sfxFever();
+  updateHUD();
+  // Fever bar countdown
+  cancelAnimationFrame(gFeverRaf);
+  function tickFever(now){
+    const remain = Math.max(0, gFeverEnd - now);
+    const pct = (remain / FEVER_DURATION) * 100;
+    const fill = document.getElementById('feverFill');
+    if(fill) fill.style.width = pct+'%';
+    if(remain <= 0){
+      endFever();
+      return;
+    }
+    gFeverRaf = requestAnimationFrame(tickFever);
+  }
+  gFeverRaf = requestAnimationFrame(tickFever);
+}
+
+function endFever(){
+  if(!gFever) return;
+  gFever = false;
+  cancelAnimationFrame(gFeverRaf);
+  document.getElementById('timerOv').classList.remove('fever-active');
+  const feverEl = document.getElementById('hudFever');
+  if(feverEl) feverEl.innerHTML = '';
+}
+
+function spawnParticles(emoji, count){
+  const cx=window.innerWidth/2, cy=window.innerHeight*0.4;
+  for(let i=0;i<count;i++){
+    const el=document.createElement('div');
+    el.className='combo-particle';
+    const angle=Math.random()*Math.PI*2;
+    const dist=60+Math.random()*100;
+    el.style.cssText=`left:${cx}px;top:${cy}px;--px:${Math.cos(angle)*dist}px;--py:${Math.sin(angle)*dist}px;animation-delay:${Math.random()*0.2}s;`;
+    el.textContent=emoji;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1200);
+  }
+}
+
+/* ══════════════════════════════
+   SOUND ENGINE ADDITIONS
+══════════════════════════════ */
+function sfxHeal(){
+  // Ascending warm tones
+  [440,554,659,880].forEach((f,i)=>setTimeout(()=>tn(f,0.2,0.15),i*80));
+}
+function sfxShield(){
+  // Metallic shield sound
+  const a=ga();if(!a)return;
+  const now=a.currentTime;
+  [800,1000,1200].forEach((f,i)=>{
+    const o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);
+    o.type='triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(0,now+i*0.06);
+    g.gain.linearRampToValueAtTime(0.2,now+i*0.06+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001,now+i*0.06+0.15);
+    o.start(now+i*0.06);o.stop(now+i*0.06+0.16);
+  });
+}
+function sfxShieldBreak(){
+  const a=ga();if(!a)return;
+  const now=a.currentTime;
+  // Glass break + bass
+  const o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);
+  o.type='sawtooth';o.frequency.setValueAtTime(1200,now);o.frequency.exponentialRampToValueAtTime(200,now+0.3);
+  g.gain.setValueAtTime(0.25,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
+  o.start(now);o.stop(now+0.36);
+}
+function sfxFever(){
+  // Epic ascending fanfare
+  [523,659,784,1047,1319,1568].forEach((f,i)=>setTimeout(()=>tn(f,0.25,0.2),i*50));
+  setTimeout(()=>{
+    [1568,1319,1568].forEach((f,i)=>setTimeout(()=>tn(f,0.15,0.15),i*100));
+  },350);
+}
 
 /* ── TOAST ── */
 let tT;
