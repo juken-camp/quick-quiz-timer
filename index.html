@@ -605,8 +605,28 @@ function goHome(){
 /* ══════════════════════════════
    CATEGORY NAVIGATION
 ══════════════════════════════ */
+function resetCatScreenState(){
+  // Reset mode to random
+  qMode = 'random';
+  document.getElementById('mR').classList.add('active');
+  document.getElementById('mS').classList.remove('active');
+  document.getElementById('mDesc').textContent = '問題をランダムに出題します';
+  // Reset session time to 5min
+  sessLimit = 300;
+  document.querySelectorAll('.sess-btn').forEach(b=>{
+    const isInf = b.textContent==='∞';
+    const s = parseInt(b.getAttribute('onclick').match(/\d+/)?.[0]??'0');
+    b.classList.toggle('active', isInf ? false : s===300);
+  });
+  // Reset timer values
+  tQ = 3.0; tA = 5.0;
+  document.getElementById('tsQ').textContent = '3.0';
+  document.getElementById('tsA').textContent = '5.0';
+}
 function openCat(subj, backScreen){
   clk(); catMode='single'; activeCatKey=subj;
+  selIds.clear();
+  resetCatScreenState();
   document.getElementById('catLogo').textContent    = CAT[subj].label;
   document.getElementById('catLogoSub').textContent = 'SELECT UNITS';
   document.getElementById('catPtitle').textContent  = '▶ 単元を選択（複数可）';
@@ -617,6 +637,8 @@ function openCat(subj, backScreen){
 }
 function goAll(){
   clk(); catMode='all';
+  selIds.clear();
+  resetCatScreenState();
   const keys = Object.keys(CAT); activeCatKey=keys[0];
   document.getElementById('catLogo').textContent    = '🌐 全教科';
   document.getElementById('catLogoSub').textContent = 'ALL SUBJECTS';
@@ -628,6 +650,7 @@ function goAll(){
 function openAll(subjects, label){
   clk(); catMode='all-preset';
   selIds.clear();
+  resetCatScreenState();
   subjects.forEach(s=>CAT[s].items.forEach(c=>selIds.add(c.id)));
   activeCatKey=subjects[0];
   document.getElementById('catLogo').textContent    = label;
