@@ -345,6 +345,14 @@ input,select{font-size:16px;}
     </div>
     <div class="mode-desc" id="mDesc">問題をランダムに出題します</div>
 
+    <!-- ライフモード -->
+    <div class="ptitle" style="margin-top:10px;margin-bottom:8px;">▶ LIFE MODE</div>
+    <div class="mode-row" style="margin-bottom:2px;">
+      <button class="mode-btn active" id="lifeOn" onclick="setLifeMode('on')">❤️ ライフあり</button>
+      <button class="mode-btn" id="lifeOff" onclick="setLifeMode('off')">♾️ ライフなし</button>
+    </div>
+    <div class="mode-desc" id="lifeDesc">ライフが0になるとゲームオーバー</div>
+
     <!-- セッション時間 -->
     <div class="ptitle" style="margin-top:10px;margin-bottom:8px;">▶ PLAY TIME</div>
     <div class="sess-grid" id="sessGrid">
@@ -548,6 +556,7 @@ let gCombo = 0;   // 連続正解数
 const MAX_LIVES = 5;
 let gLives = 3;
 let gCorrect = 0, gTotal = 0;
+let gLifeMode = 'on'; // 'on'=ライフあり, 'off'=ライフなし（時間制限のみ）
 let gLevel = 1, gXP = 0;
 const XP_PER_LEVEL = [100,150,200,250,300,350,400,500,600,800]; // レベルごとの必要XP
 
@@ -617,6 +626,11 @@ function resetCatScreenState(){
   tQ = 3.0; tA = 5.0;
   document.getElementById('tsQ').textContent = '3.0';
   document.getElementById('tsA').textContent = '5.0';
+  // Reset life mode
+  gLifeMode = 'on';
+  document.getElementById('lifeOn').classList.add('active');
+  document.getElementById('lifeOff').classList.remove('active');
+  document.getElementById('lifeDesc').textContent = 'ライフが0になるとゲームオーバー';
 }
 function openCat(subj, backScreen){
   clk(); catMode='single'; activeCatKey=subj;
@@ -704,12 +718,26 @@ function setMode(m){
   document.getElementById('mS').classList.toggle('active',m==='seq');
   document.getElementById('mDesc').textContent=m==='random'?'問題をランダムに出題します':'問題を順番通りに出題します';
 }
+function setLifeMode(m){
+  clk(); gLifeMode=m;
+  document.getElementById('lifeOn').classList.toggle('active',m==='on');
+  document.getElementById('lifeOff').classList.toggle('active',m==='off');
+  document.getElementById('lifeDesc').textContent=m==='on'?'ライフが0になるとゲームオーバー':'ミスしてもゲームオーバーにならない（時間制限のみ）';
+  // ライフなしの場合、∞だと終わらないので5分をデフォルトに
+  if(m==='off' && sessLimit===0){
+    setSess(300);
+  }
+}
 
 /* ══════════════════════════════
    DECIDE & START
 ══════════════════════════════ */
 function setSess(secs){
   clk();
+  if(secs===0 && gLifeMode==='off'){
+    toast('⚠ ライフなしモードでは∞は選べません');
+    return;
+  }
   sessLimit = secs;
   document.querySelectorAll('.sess-btn').forEach(b=>{
     const s = parseInt(b.getAttribute('onclick').match(/\d+/)?.[0]??'0');
@@ -753,11 +781,14 @@ function stopSessTimer(){
 function sessionEnd(){
   stopSessTimer();
   document.getElementById('sessTimerDisp').textContent='⏰ TIME UP';
-  // 少し待ってゲームオーバー
-  setTimeout(()=>{ killTimer(); gameOver(); }, 600);
+  setTimeout(()=>{ killTimer(); gameOver(true); }, 600);
 }
 
 function decideAndStart(){
+  if(gLifeMode==='off' && sessLimit===0){
+    toast('⚠ ライフなしモードでは時間を設定してください');
+    return;
+  }
   pool=[];
   selIds.forEach(id=>{ if(typeof problemDatabase!=='undefined'&&problemDatabase[id]) pool=pool.concat(problemDatabase[id]); });
   if(pool.length===0){ toast('⚠ 問題データが見つかりません'); return; }
@@ -817,12 +848,21 @@ function onCorrect(elapsed){
 }
 
 function checkComboMilestones(){
-  // 5の倍数でライフ回復
-  if(gCombo > 0 && gCombo % COMBO_HEAL === 0 && gLives < MAX_LIVES){
-    gLives++;
-    showLifeRecover();
-    sfxHeal();
-    spawnParticles('❤️', 8);
+  // 5の倍数でライフ回復（ライフありのみ）orボーナスポイント
+  if(gCombo > 0 && gCombo % COMBO_HEAL === 0){
+    if(gLifeMode==='on' && gLives < MAX_LIVES){
+      gLives++;
+      showLifeRecover();
+      sfxHeal();
+      spawnParticles('❤️', 8);
+    } else if(gLifeMode==='off'){
+      // ライフなしモード: ボーナスポイント
+      gScore += 200;
+      showScorePopup('+200 BONUS', '#ff2d78');
+      sfxHeal();
+      spawnParticles('⭐', 6);
+      toast('⭐ '+COMBO_HEAL+'コンボボーナス! +200');
+    }
   }
   // 10の倍数でシールド
   if(gCombo > 0 && gCombo % COMBO_SHIELD === 0){
@@ -840,22 +880,29 @@ function checkComboMilestones(){
 
 function onMiss(){
   gTotal++;
-  // シールドチェック
+  // シールドチェック（ライフモード問わず有効）
   if(gShield > 0){
     gShield--;
     gCombo = 0; gStreak = 0;
     showShieldBreak();
     sfxShieldBreak();
     updateHUD();
-    return; // ライフは減らない！
+    return;
   }
   gCombo = 0; gStreak = 0;
-  gLives--;
-  endFever(); // フィーバー解除
-  updateHUD();
-  sfxWrong();
-  shakeHud();
-  if(gLives <= 0) setTimeout(gameOver, 800);
+  endFever();
+  if(gLifeMode==='on'){
+    gLives--;
+    updateHUD();
+    sfxWrong();
+    shakeHud();
+    if(gLives <= 0) setTimeout(()=>gameOver(false), 800);
+  } else {
+    // ライフなしモード: ライフは減らない、音と振動だけ
+    updateHUD();
+    sfxWrong();
+    shakeHud();
+  }
 }
 
 function addXP(xp){
@@ -874,14 +921,21 @@ function xpNeeded(lv){
 }
 
 function updateHUD(){
-  // Lives (max 5)
+  // Lives (max 5) or ∞ mode
   const lv = document.getElementById('hudLives');
   lv.innerHTML = '';
-  for(let i=0;i<MAX_LIVES;i++){
-    const h=document.createElement('span');
-    h.className='hud-heart'+(i>=gLives?' lost':'');
-    h.textContent='❤️';
-    lv.appendChild(h);
+  if(gLifeMode==='on'){
+    for(let i=0;i<MAX_LIVES;i++){
+      const h=document.createElement('span');
+      h.className='hud-heart'+(i>=gLives?' lost':'');
+      h.textContent='❤️';
+      lv.appendChild(h);
+    }
+  } else {
+    const inf=document.createElement('span');
+    inf.style.cssText='font-family:Orbitron,monospace;font-size:0.7rem;color:var(--nc);text-shadow:0 0 10px var(--nc);letter-spacing:0.05em;';
+    inf.textContent='♾️ NO LIFE';
+    lv.appendChild(inf);
   }
   // Shield indicator
   if(gShield > 0){
@@ -968,9 +1022,23 @@ function showLevelUp(){
   setTimeout(()=>el.remove(), 1800);
 }
 
-function gameOver(){
-  killTimer(); endFever();
+function gameOver(isTimeUp){
+  killTimer(); endFever(); stopSessTimer();
   document.getElementById('timerOv').classList.add('hidden');
+  // Title
+  const goTitle = document.querySelector('.go-title');
+  const goCard = document.querySelector('.go-card');
+  if(isTimeUp){
+    goTitle.textContent = 'TIME UP!';
+    goTitle.style.color = 'var(--ny)';
+    goCard.style.borderColor = 'var(--ny)';
+    goCard.style.boxShadow = '0 0 60px rgba(255,234,0,0.2)';
+  } else {
+    goTitle.textContent = 'GAME OVER';
+    goTitle.style.color = 'var(--np)';
+    goCard.style.borderColor = 'var(--np)';
+    goCard.style.boxShadow = '0 0 60px rgba(255,45,120,0.2)';
+  }
   // Rank
   const rank = calcRank(gScore, gCorrect, gTotal);
   document.getElementById('goRank').textContent = rank.label;
@@ -1042,7 +1110,7 @@ function showTQ(){
   let answered=false;
   ta.querySelectorAll('.topt').forEach(btn=>{
     btn.onclick=()=>{
-      if(answered||gLives<=0) return;
+      if(answered||(gLifeMode==='on'&&gLives<=0)) return;
       answered=true;
       killTimer();
       const chosen=parseInt(btn.dataset.idx);
@@ -1068,7 +1136,7 @@ function showTQ(){
       document.getElementById('cdNum').className='cdnum ac';
       document.getElementById('progFill').className='pfill af';
       lastBeepSec=-1;
-      if(gLives>0) countdown(tA,nextQ);
+      if(gLifeMode==='off'||gLives>0) countdown(tA,nextQ);
     };
   });
 
@@ -1094,7 +1162,7 @@ function timeUp(){
   document.getElementById('cdNum').className='cdnum ac';
   document.getElementById('progFill').className='pfill af';
   lastBeepSec=-1;
-  if(gLives>0) countdown(tA,nextQ);
+  if(gLifeMode==='off'||gLives>0) countdown(tA,nextQ);
 }
 
 function nextQ(){
