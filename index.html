@@ -3,7 +3,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quick Quiz Timer | JUKEN CAMP</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="problems.js"></script>
@@ -14,7 +14,7 @@
   --bg:rgba(0,245,255,0.22);--tm:#e0eaff;--td:#5a6a8a;
 }
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
-button:focus{outline:none;}
+button:focus-visible{outline:2px solid var(--nc);outline-offset:3px;}
 @media(hover:none){button:focus,button:active{outline:none;}}
 html,body{height:100%;}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--b0);color:var(--tm);min-height:100vh;overflow-x:hidden;}
@@ -227,6 +227,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .pulse{animation:pulse-glow 2s ease-in-out infinite;}
 input,select{font-size:16px;}
 @media(max-width:380px){.cat-grid{grid-template-columns:1fr;}}
+summary{cursor:pointer;font-size:0.75rem;color:var(--nc);padding:6px;}
+.topt{min-height:44px;overflow-wrap:anywhere;}
+.texp-inline{color:#bdc9e1;}
+.overlay.paused .topt{opacity:0.55;}
+.qcard-bot{padding-bottom:max(12px,env(safe-area-inset-bottom));}
 </style>
 </head>
 <body>
@@ -324,13 +329,13 @@ input,select{font-size:16px;}
         </div>
         <div class="tsdiv"></div>
         <div class="tsitem">
-          <div class="tslbl">💡 解答</div>
+          <div class="tslbl">💡 次の問題まで</div>
           <div class="tsstep">
             <div class="tsbtngroup">
               <button class="tsbtn big" onclick="chTime('a',-1)">−1</button>
               <button class="tsbtn sml" onclick="chTime('a',-0.1)">−.1</button>
             </div>
-            <span class="tsval ac" id="tsA">5.0</span>
+            <span class="tsval ac" id="tsA">1.0</span>
             <span class="tssec">秒</span>
             <div class="tsbtngroup">
               <button class="tsbtn big" onclick="chTime('a',1)">+1</button>
@@ -382,7 +387,6 @@ input,select{font-size:16px;}
         </div>
         <div class="hud-right">
           <div class="sess-timer" id="sessTimerDisp"></div>
-          <div class="sess-timer" id="sessTimerDisp"></div>
           <div class="hud-streak" id="hudStreak"></div>
           <div class="hud-combo" id="hudCombo"></div>
         </div>
@@ -393,7 +397,7 @@ input,select{font-size:16px;}
         <div class="xp-lbl"><span id="xpLvl">LV 1</span><span id="xpVal">0 / 100 XP</span></div>
       </div>
       <!-- Timer -->
-      <div class="tphase qp" id="tPhase">❓ QUESTION</div>
+      <div class="tphase qp" id="tPhase" role="status" aria-live="polite">❓ QUESTION</div>
       <div class="cdwrap">
         <div class="cdnum qc" id="cdNum">3.0</div>
         <div class="ptrack"><div class="pfill qf" id="progFill" style="width:100%"></div></div>
@@ -407,11 +411,11 @@ input,select{font-size:16px;}
       <div class="tcounter" id="tCount">1 / 1</div>
       <div class="tctrl">
         <button class="nbtn ye" id="pauseBtn" onclick="togglePause()">⏸ 停止</button>
-        <button class="nbtn gn" onclick="skipPhase()">⏭ スキップ</button>
+        <button class="nbtn gn" id="skipBtn" onclick="skipPhase()">答えを見る</button>
         <button class="nbtn pk" onclick="closeTimer()">✕ 終了</button>
       </div>
-      <div class="tsbox" style="margin-bottom:0;">
-        <div class="tstitle">⚙ LIVE SETTINGS</div>
+      <details class="tsbox" style="margin-bottom:0;"><summary>⚙ 時間設定を変更</summary>
+        <div class="tstitle">⚙ 時間設定</div>
         <div class="tsrow">
           <div class="tsitem">
             <div class="tslbl">❓ 問題</div>
@@ -430,13 +434,13 @@ input,select{font-size:16px;}
           </div>
           <div class="tsdiv"></div>
           <div class="tsitem">
-            <div class="tslbl">💡 解答</div>
+            <div class="tslbl">💡 次の問題まで</div>
             <div class="tsstep">
               <div class="tsbtngroup">
                 <button class="tsbtn big" onclick="chTime('a',-1)">−1</button>
                 <button class="tsbtn sml" onclick="chTime('a',-0.1)">−.1</button>
               </div>
-              <span class="tsval ac" id="tsA2">5.0</span>
+              <span class="tsval ac" id="tsA2">1.0</span>
               <span class="tssec">秒</span>
               <div class="tsbtngroup">
                 <button class="tsbtn big" onclick="chTime('a',1)">+1</button>
@@ -445,7 +449,7 @@ input,select{font-size:16px;}
             </div>
           </div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 </div>
@@ -546,10 +550,12 @@ let selIds = new Set(), pool = [], qMode = 'random';
 let sessLimit = 300; // セッション時間（秒）0=無制限
 let sessRemain = 0, sessTout = null, sessRaf = null;
 let catMode = 'single', activeCatKey = '';
-let tQ = 3.0, tA = 5.0;
+let tQ = 3.0, tA = 1.0;
 let tPaused = false, tPhase = 'q', tProbs = [], tIdx = 0;
 let tTout = null, tRaf = null, lastBeepSec = -1;
 let qStartTime = 0; // for time bonus
+let tRunning=false, phaseRemaining=0, phaseDeadline=0, phaseCallback=null, phaseDuration=0;
+let timerGeneration=0, pauseStarted=0, sessLastTick=0, sessLastSecond=-1;
 
 /* ── GAME STATE ── */
 let gScore = 0, gStreak = 0, gMaxStreak = 0;
@@ -599,7 +605,7 @@ function show(id){
 }
 function goSubj(s){ clk(); show(s+'Screen'); }
 function goHome(){
-  clk(); endFever();
+  clk(); closeRun();
   selIds.clear();
   document.getElementById('floatBack').classList.add('hidden');
   document.getElementById('timerOv').classList.add('hidden');
@@ -624,9 +630,9 @@ function resetCatScreenState(){
     b.classList.toggle('active', isInf ? false : s===300);
   });
   // Reset timer values
-  tQ = 3.0; tA = 5.0;
+  tQ = 3.0; tA = 1.0;
   document.getElementById('tsQ').textContent = '3.0';
-  document.getElementById('tsA').textContent = '5.0';
+  document.getElementById('tsA').textContent = '1.0';
   // Reset life mode
   gLifeMode = 'on';
   document.getElementById('lifeOn').classList.add('active');
@@ -749,40 +755,35 @@ function setSess(secs){
 }
 
 function startSessTimer(){
-  clearTimeout(sessTout); cancelAnimationFrame(sessRaf);
-  if(sessLimit===0){
-    document.getElementById('sessTimerDisp').textContent='';
-    return;
-  }
-  sessRemain = sessLimit * 1000;
-  const t0 = performance.now();
-  function tick(now){
-    if(tPaused){ sessRaf=requestAnimationFrame(tick); return; }
-    const el = Math.max(0, sessRemain - (now - t0));
-    const totalSec = Math.ceil(el/1000);
-    const m = Math.floor(totalSec/60);
-    const s = totalSec%60;
-    const disp = (el===0)?'TIME UP':m+':'+String(s).padStart(2,'0');
-    const el2 = document.getElementById('sessTimerDisp');
-    el2.textContent = '⏰ '+disp;
-    el2.classList.toggle('warn', totalSec<=30);
-    if(el<=0){ sessionEnd(); return; }
-    // 残り30秒でビープ
-    if(totalSec===30) sfxBeepHigh();
-    if(totalSec<=10 && totalSec > 0 && s === totalSec) sfxBeepHigh();
-    sessRaf = requestAnimationFrame(tick);
-  }
-  sessRaf = requestAnimationFrame(tick);
-}
-
-function stopSessTimer(){
-  clearTimeout(sessTout); cancelAnimationFrame(sessRaf);
-}
-
-function sessionEnd(){
   stopSessTimer();
-  document.getElementById('sessTimerDisp').textContent='⏰ TIME UP';
-  setTimeout(()=>{ killTimer(); gameOver(true); }, 600);
+  sessRemain=sessLimit*1000; sessLastTick=performance.now(); sessLastSecond=-1;
+  const display=document.getElementById('sessTimerDisp');
+  display.classList.remove('warn');
+  if(sessLimit===0){ display.textContent='⏰ 制限なし'; return; }
+  function tick(now){
+    if(!tRunning) return;
+    if(!tPaused) sessRemain=Math.max(0,sessRemain-(now-sessLastTick));
+    sessLastTick=now;
+    const seconds=Math.ceil(sessRemain/1000);
+    display.textContent='⏰ '+Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+    display.classList.toggle('warn',seconds<=30);
+    if(!tPaused && seconds!==sessLastSecond){
+      if(seconds===30 || (seconds<=10 && seconds>0)) sfxBeepHigh();
+      sessLastSecond=seconds;
+    }
+    if(sessRemain<=0){ sessionEnd(); return; }
+    sessRaf=requestAnimationFrame(tick);
+  }
+  sessRaf=requestAnimationFrame(tick);
+}
+function stopSessTimer(){
+  clearTimeout(sessTout); cancelAnimationFrame(sessRaf); sessRaf=null;
+}
+function sessionEnd(){ if(tRunning) gameOver(true); }
+function closeRun(){
+  tRunning=false; killTimer(); stopSessTimer(); endFever();
+  tPaused=false; phaseCallback=null;
+  document.getElementById('timerOv').classList.remove('paused');
 }
 
 function decideAndStart(){
@@ -790,6 +791,7 @@ function decideAndStart(){
     toast('⚠ ライフなしモードでは時間を設定してください');
     return;
   }
+  if(typeof problemDatabase==='undefined'){ toast('⚠ 問題データを読み込めません。problems.js を同じフォルダに置いてください'); return; }
   pool=[];
   selIds.forEach(id=>{ if(typeof problemDatabase!=='undefined'&&problemDatabase[id]) pool=pool.concat(problemDatabase[id]); });
   if(pool.length===0){ toast('⚠ 問題データが見つかりません'); return; }
@@ -810,7 +812,7 @@ function resetGame(){
   gShield=0; gFever=false; gFeverEnd=0;
   cancelAnimationFrame(gFeverRaf);
   document.getElementById('timerOv').classList.remove('shield-active','fever-active');
-  updateHUD();
+  updateHUD(); updateXPBar();
 }
 
 /* ══════════════════════════════
@@ -881,12 +883,13 @@ function checkComboMilestones(){
 
 function onMiss(){
   gTotal++;
+  sfxWrong();
   // シールドチェック（ライフモード問わず有効）
   if(gShield > 0){
     gShield--;
     gCombo = 0; gStreak = 0;
     showShieldBreak();
-    sfxShieldBreak();
+    // 不正解音はシールド使用時も共通。
     updateHUD();
     return;
   }
@@ -895,13 +898,11 @@ function onMiss(){
   if(gLifeMode==='on'){
     gLives--;
     updateHUD();
-    sfxWrong();
     shakeHud();
-    if(gLives <= 0) setTimeout(()=>gameOver(false), 800);
+
   } else {
     // ライフなしモード: ライフは減らない、音と振動だけ
     updateHUD();
-    sfxWrong();
     shakeHud();
   }
 }
@@ -1024,7 +1025,8 @@ function showLevelUp(){
 }
 
 function gameOver(isTimeUp){
-  killTimer(); endFever(); stopSessTimer();
+  if(!tRunning) return;
+  closeRun();
   document.getElementById('timerOv').classList.add('hidden');
   // Title
   const goTitle = document.querySelector('.go-title');
@@ -1069,153 +1071,157 @@ function calcRank(score, correct, total){
 /* ══════════════════════════════
    TIMER ENGINE
 ══════════════════════════════ */
+function shuffled(items){
+  const result=[...items];
+  for(let i=result.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [result[i],result[j]]=[result[j],result[i]];
+  }
+  return result;
+}
 function startTimer(){
-  suc();
-  tProbs = qMode==='random'?[...pool].sort(()=>Math.random()-0.5):[...pool];
-  tIdx=0; tPaused=false; lastBeepSec=-1;
+  closeRun(); suc();
+  tProbs=qMode==='random'?shuffled(pool):[...pool];
+  if(!tProbs.length) return;
+  tIdx=0; tPaused=false; tRunning=true;
   document.getElementById('pauseBtn').textContent='⏸ 停止';
+  document.getElementById('skipBtn').disabled=false;
   syncSettings();
   document.getElementById('timerOv').classList.remove('hidden');
-  startSessTimer();
-  showTQ();
+  startSessTimer(); showTQ();
 }
 function closeTimer(){
-  clk(); killTimer(); stopSessTimer(); endFever();
+  clk(); closeRun();
   document.getElementById('timerOv').classList.add('hidden');
 }
-
 function showTQ(){
+  if(!tRunning) return;
   tPhase='q';
   const q=tProbs[tIdx];
-  document.getElementById('tPhase').textContent='❓ QUESTION';
+  document.getElementById('tPhase').textContent='❓ 問題';
   document.getElementById('tPhase').className='tphase qp';
   document.getElementById('tQ').textContent=q.q;
   document.getElementById('tCount').textContent=(tIdx+1)+' / '+tProbs.length;
+  document.getElementById('skipBtn').textContent='答えを見る';
   document.getElementById('cdNum').className='cdnum qc';
   document.getElementById('progFill').className='pfill qf';
-  lastBeepSec=-1;
   qStartTime=performance.now();
-
-  // ── 選択肢を全てここで決定してインデックスで管理（文字列比較バグを回避）
-  const correctIdx = q.ans;
-  const opts = q.opts; // シャッフルしない配列のコピー
-  const order = [...opts.keys()].sort(()=>Math.random()-0.5); // インデックスをシャッフル
-  const labels = ['A','B','C','D'];
+  document.querySelector('.qcard-mid').scrollTop=0;
   const ta=document.getElementById('tAns');
-
-  // 一括でHTMLを書き換え（前の問題の残像なし）
-  ta.innerHTML = order.map((origIdx,i)=>
-    `<button class="topt" data-idx="${origIdx}"><span class="topt-lbl">${labels[i]}</span>${opts[origIdx]}</button>`
-  ).join('');
-
-  let answered=false;
-  ta.querySelectorAll('.topt').forEach(btn=>{
-    btn.onclick=()=>{
-      if(answered||(gLifeMode==='on'&&gLives<=0)) return;
-      answered=true;
-      killTimer();
-      const chosen=parseInt(btn.dataset.idx);
-      const elapsed=performance.now()-qStartTime;
-      // ハイライト
-      ta.querySelectorAll('.topt').forEach(b=>{
-        b.disabled=true;
-        if(parseInt(b.dataset.idx)===correctIdx) b.classList.add('opt-correct');
-        if(b===btn && chosen!==correctIdx)        b.classList.add('opt-wrong');
-      });
-      if(chosen===correctIdx){ onCorrect(elapsed); }
-      else                   { onMiss(); }
-      // 解説
-      if(q.exp){
-        const d=document.createElement('div');
-        d.className='texp-inline'; d.textContent='💡 '+q.exp;
-        ta.appendChild(d);
-      }
-      // 解答フェーズへ
-      tPhase='a';
-      document.getElementById('tPhase').textContent='💡 ANSWER';
-      document.getElementById('tPhase').className='tphase ap';
-      document.getElementById('cdNum').className='cdnum ac';
-      document.getElementById('progFill').className='pfill af';
-      lastBeepSec=-1;
-      if(gLifeMode==='off'||gLives>0) countdown(tA,nextQ);
-    };
+  ta.replaceChildren();
+  shuffled([...q.opts.keys()]).forEach((original,i)=>{
+    const btn=document.createElement('button');
+    btn.className='topt'; btn.dataset.idx=original;
+    const label=document.createElement('span');
+    label.className='topt-lbl'; label.textContent=String.fromCharCode(65+i);
+    btn.append(label,document.createTextNode(q.opts[original]));
+    btn.onclick=()=>answerQuestion(original);
+    ta.appendChild(btn);
   });
-
-  if(!tPaused) countdown(tQ, ()=>timeUp());
+  countdown(tQ,timeUp);
 }
-
-function timeUp(){
-  // 時間切れ = ミス扱い
+function answerQuestion(chosen=null){
+  if(!tRunning || tPaused || tPhase!=='q') return;
+  // Lock the phase before scoring, sound or rendering: one question counts once.
+  tPhase='a'; killTimer();
+  const q=tProbs[tIdx], correct=Number(q.ans);
+  const isCorrect=chosen!==null && chosen===correct;
   const ta=document.getElementById('tAns');
-  const q=tProbs[tIdx];
-  ta.querySelectorAll('.topt').forEach(b=>{
-    b.disabled=true;
-    if(parseInt(b.dataset.idx)===q.ans) b.classList.add('opt-correct');
+  ta.querySelectorAll('.topt').forEach(btn=>{
+    btn.disabled=true;
+    const idx=Number(btn.dataset.idx);
+    if(idx===correct) btn.classList.add('opt-correct');
+    if(idx===chosen && !isCorrect) btn.classList.add('opt-wrong');
   });
   if(q.exp){
-    const d=document.createElement('div');
-    d.className='texp-inline'; d.textContent='💡 '+q.exp;
-    ta.appendChild(d);
+    const exp=document.createElement('div'); exp.className='texp-inline';
+    exp.textContent='💡 '+q.exp; ta.appendChild(exp);
   }
-  onMiss();
-  document.getElementById('tPhase').textContent='💡 ANSWER';
+  document.getElementById('tPhase').textContent=isCorrect?'⭕ 正解！':chosen===null?'⌛ 時間切れ・正解を確認':'❌ 不正解・正解を確認';
   document.getElementById('tPhase').className='tphase ap';
   document.getElementById('cdNum').className='cdnum ac';
   document.getElementById('progFill').className='pfill af';
-  lastBeepSec=-1;
-  if(gLifeMode==='off'||gLives>0) countdown(tA,nextQ);
+  document.getElementById('skipBtn').textContent='次の問題へ';
+  // Schedule progression first so audio failure cannot strand a completed question.
+  countdown(tA,()=>{
+    if(gLifeMode==='on' && gLives<=0) gameOver(false);
+    else nextQ();
+  });
+  if(isCorrect) onCorrect(performance.now()-qStartTime);
+  else onMiss();
+  if(gLifeMode==='on' && gLives<=0) document.getElementById('skipBtn').textContent='結果を見る';
 }
-
+function timeUp(){ answerQuestion(); }
 function nextQ(){
+  if(!tRunning || tPaused) return;
+  if(gLifeMode==='on' && gLives<=0){ gameOver(false); return; }
   tIdx=(tIdx+1)%tProbs.length;
   if(tIdx===0) toast('🔄 一周しました！');
   showTQ();
 }
-
-function countdown(secs, cb){
+function renderCountdown(){
+  document.getElementById('cdNum').textContent=(phaseRemaining/1000).toFixed(1);
+  document.getElementById('progFill').style.width=(phaseDuration?phaseRemaining/phaseDuration*100:0)+'%';
+}
+function countdown(secs,cb,resuming=false){
   killTimer();
-  const dur=secs*1000, t0=performance.now();
+  phaseRemaining=Math.max(0,secs*1000); phaseCallback=cb;
+  if(!resuming) phaseDuration=phaseRemaining;
+  renderCountdown();
+  if(tPaused || !tRunning) return;
+  phaseDeadline=performance.now()+phaseRemaining;
+  const generation=timerGeneration;
+  let finished=false;
+  function finish(){
+    if(finished || generation!==timerGeneration || tPaused || !tRunning) return;
+    finished=true; killTimer(); phaseRemaining=0; renderCountdown(); cb();
+  }
   function tick(now){
-    const el=Math.max(0,dur-(now-t0));
-    const disp=(el/1000).toFixed(1);
-    const cdEl=document.getElementById('cdNum');
-    cdEl.textContent=disp;
-    document.getElementById('progFill').style.width=(el/dur*100)+'%';
-    // 0秒フラッシュのみ（ビープ音なし）
-    if(el<=0&&lastBeepSec!==0){
-      lastBeepSec=0;
-      sfxDone(); cdEl.classList.add('warn'); document.getElementById('timerOv').classList.add('timesup-flash');
-      setTimeout(()=>{cdEl.classList.remove('warn');document.getElementById('timerOv').classList.remove('timesup-flash');},400);
-    }
-    if(el<=0){ cb(); return; }
+    if(generation!==timerGeneration || tPaused || !tRunning) return;
+    phaseRemaining=Math.max(0,phaseDeadline-now); renderCountdown();
+    if(phaseRemaining<=0){ finish(); return; }
     tRaf=requestAnimationFrame(tick);
   }
   tRaf=requestAnimationFrame(tick);
-  tTout=setTimeout(cb,dur);
+  tTout=setTimeout(finish,phaseRemaining);
 }
-function killTimer(){ clearTimeout(tTout); cancelAnimationFrame(tRaf); tTout=null; tRaf=null; }
-
+function killTimer(){
+  clearTimeout(tTout); cancelAnimationFrame(tRaf);
+  tTout=null; tRaf=null; timerGeneration++;
+}
 function togglePause(){
-  clk(); tPaused=!tPaused;
-  const b=document.getElementById('pauseBtn');
-  if(tPaused){ killTimer(); b.textContent='▶ 再開'; }
-  else{ b.textContent='⏸ 停止'; lastBeepSec=-1; if(tPhase==='q') countdown(tQ,()=>timeUp()); else countdown(tA,nextQ); }
+  if(!tRunning) return;
+  clk();
+  const now=performance.now(), b=document.getElementById('pauseBtn');
+  if(!tPaused){
+    phaseRemaining=Math.max(0,phaseDeadline-now);
+    if(sessLimit>0) sessRemain=Math.max(0,sessRemain-(now-sessLastTick));
+    tPaused=true; pauseStarted=now; killTimer(); renderCountdown();
+    b.textContent='▶ 再開';
+  }else{
+    qStartTime+=now-pauseStarted;
+    if(gFever) gFeverEnd+=now-pauseStarted;
+    tPaused=false; sessLastTick=now;
+    b.textContent='⏸ 停止';
+    countdown(phaseRemaining/1000,phaseCallback,true);
+  }
+  document.getElementById('timerOv').classList.toggle('paused',tPaused);
+  document.getElementById('skipBtn').disabled=tPaused;
+  document.querySelectorAll('#tAns .topt').forEach(btn=>btn.disabled=tPaused || tPhase!=='q');
 }
 function skipPhase(){
-  clk(); killTimer(); lastBeepSec=-1;
-  if(tPhase==='q') timeUp();
-  else nextQ();
+  if(!tRunning || tPaused) return;
+  clk(); killTimer();
+  if(tPhase==='q') timeUp(); else nextQ();
 }
 function chTime(t,d){
   clk();
   if(t==='q') tQ=Math.round(Math.max(0.1,Math.min(60,tQ+d))*10)/10;
-  else        tA=Math.round(Math.max(0.1,Math.min(60,tA+d))*10)/10;
+  else tA=Math.round(Math.max(0.5,Math.min(60,tA+d))*10)/10;
   syncSettings();
-  if(!tPaused&&!document.getElementById('timerOv').classList.contains('hidden')){
-    killTimer(); lastBeepSec=-1;
-    if(tPhase==='q') countdown(tQ,()=>timeUp()); else countdown(tA,nextQ);
-  }
+  if(tRunning && t===tPhase) countdown(t==='q'?tQ:tA,phaseCallback);
 }
+
 function syncSettings(){
   ['tsQ','tsQ2'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tQ.toFixed(1);});
   ['tsA','tsA2'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tA.toFixed(1);});
@@ -1225,8 +1231,15 @@ function syncSettings(){
    SOUND ENGINE
 ══════════════════════════════ */
 let ac=null;
-function ga(){ if(!ac)try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} if(ac&&ac.state==='suspended')ac.resume(); return ac; }
+function ga(){
+  try{
+    if(!ac) ac=new(window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==='suspended') ac.resume().catch(()=>{});
+    return ac.state==='closed'?null:ac;
+  }catch(e){ return null; }
+}
 function tn(f,d,v=0.18,tp='sine'){
+  try{
   const a=ga();if(!a)return;
   const o=a.createOscillator(),g=a.createGain();
   o.connect(g);g.connect(a.destination);
@@ -1235,6 +1248,7 @@ function tn(f,d,v=0.18,tp='sine'){
   g.gain.linearRampToValueAtTime(v,a.currentTime+0.01);
   g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);
   o.start();o.stop(a.currentTime+d);
+  }catch(e){ /* Sound is optional; progression is not. */ }
 }
 function clk(){ tn(900,0.06,0.1,'square'); }
 function suc(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tn(f,0.18,0.12),i*70)); }
@@ -1306,6 +1320,7 @@ function startFever(){
   // Fever bar countdown
   cancelAnimationFrame(gFeverRaf);
   function tickFever(now){
+    if(tPaused){ gFeverRaf=requestAnimationFrame(tickFever); return; }
     const remain = Math.max(0, gFeverEnd - now);
     const pct = (remain / FEVER_DURATION) * 100;
     const fill = document.getElementById('feverFill');
@@ -1395,7 +1410,10 @@ const ks=document.createElement('style');
 ks.textContent='@keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
 document.head.appendChild(ks);
 
-document.addEventListener('click',()=>{ if(ac&&ac.state==='suspended')ac.resume(); },{once:true});
+document.addEventListener('click',()=>{ ga(); },{once:true});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden && tRunning && !tPaused) togglePause();
+});
 
 // Prevent ghost hover/focus on touch devices: blur buttons after tap
 document.addEventListener('touchend',()=>{
